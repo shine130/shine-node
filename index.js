@@ -1,19 +1,30 @@
-const fs = require('fs');
+const http = require('http');
 
-fs.readdirSync('logs').map((file) => {
-    fs.unlink(`logs/${file}`,(error) => {
-        if (error) {
-            console.log(error);
-        } else {
-            console.log(`成功的删除了文件: ${file}`);
-        }
+var options = {
+    protocol:'http:',
+    hostname:'api.douban.com',
+    port:'80',
+    method:'GET',
+    path:'/v2/movie/top250'
+};
+
+var responseData = '';
+
+var request = http.request(options,(response) => {
+    response.setEncoding('utf8');
+    response.on('data',(chunk) => {
+        responseData += chunk;
+    });
+    response.on('end',() => {
+        JSON.parse(responseData).subjects.map((item) => {
+            console.log(item.title);
+        })
     })
+
 })
 
-fs.rmdir('logs',(error) => {
-    if (error) {
-        console.log(error);
-    } else {
-        console.log('成功的删除了目录：logs');
-    }
-})
+request.on('error',(error) => {
+    console.log(error);
+});
+
+request.end();
