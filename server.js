@@ -1,14 +1,15 @@
-const http = require('http');
+const express = require('express')
+const eventRouter = require('./routes/eventRoute')
+const app = express()
+const port = process.env.PORT || 3000
+const bodyParser = require('body-parser')
 
-var server = http.createServer();
+app.use(bodyParser.json())
 
-server.on('request',(request,response) => {
-    response.writeHead(200,{
-        'Content-Type' : 'text/html'
-    });
-    response.end(`<h1>hello ~ </h1>`)
-});
+app.use('/api',eventRouter)
 
-server.listen(8080);
+app.get('/',(request,response) => {
+    response.send('hello~')
+})
 
-console.log('Server runing at http://localhost:8080/');
+app.listen(port,() => console.log(`监听端口:${port}`))
