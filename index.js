@@ -1,30 +1,18 @@
-const http = require('http');
+import express from 'express'
+import morgan from 'morgan'
+import path from 'path'
 
-var options = {
-    protocol:'http:',
-    hostname:'api.douban.com',
-    port:'80',
-    method:'GET',
-    path:'/v2/movie/top250'
-};
+const app = express()
 
-var responseData = '';
+app.set('views',path.resolve(__dirname,'views'))
+app.set('view engine','ejs')
 
-var request = http.request(options,(response) => {
-    response.setEncoding('utf8');
-    response.on('data',(chunk) => {
-        responseData += chunk;
-    });
-    response.on('end',() => {
-        JSON.parse(responseData).subjects.map((item) => {
-            console.log(item.title);
-        })
-    })
+app.use(morgan('dev'))
 
+app.get('/',(request,response) => {
+    response.render('index')
 })
 
-request.on('error',(error) => {
-    console.log(error);
-});
-
-request.end();
+app.listen(3000,() => {
+    console.log('Listen port:3000')
+})
