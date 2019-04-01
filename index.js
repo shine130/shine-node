@@ -1,30 +1,42 @@
-const http = require('http');
+const jwt = require('jsonwebtoken')
+const fs = require('fs')
 
-var options = {
-    protocol:'http:',
-    hostname:'api.douban.com',
-    port:'80',
-    method:'GET',
-    path:'/v2/movie/top250'
-};
+const payload = {
+    name:'shine',
+    admin:true
+}
 
-var responseData = '';
+/***
+ * HS256
+*/
 
-var request = http.request(options,(response) => {
-    response.setEncoding('utf8');
-    response.on('data',(chunk) => {
-        responseData += chunk;
-    });
-    response.on('end',() => {
-        JSON.parse(responseData).subjects.map((item) => {
-            console.log(item.title);
-        })
-    })
+// const secret = 'I_LOVE_SHINE'
 
+// const token = jwt.sign(payload,secret)
+
+// console.log(token)
+
+// jwt.verify(token,secret,(error,decoded) => {
+//     if(error){
+//         console.log(error.message)
+//         return
+//     }
+//     console.log(decoded)
+// })
+
+/***
+ * RS256
+*/
+
+const privateKey = fs.readFileSync('./config/private.key')
+const token = jwt.sign(payload,privateKey,{ algorithm: 'RS256'})
+console.log(token)
+
+const publicKey = fs.readFileSync('./config/public.key')
+jwt.verify(token,publicKey,(error,decoded) => {
+    if(error){
+        console.log(error.message)
+        return
+    }
+    console.log(decoded)
 })
-
-request.on('error',(error) => {
-    console.log(error);
-});
-
-request.end();
