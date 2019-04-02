@@ -1,30 +1,56 @@
-const http = require('http');
+const express = require('express')
+const app = express()
+const multer = require('multer')
+const loki = require('lokijs')
+const fs = require('fs')
 
-var options = {
-    protocol:'http:',
-    hostname:'api.douban.com',
-    port:'80',
-    method:'GET',
-    path:'/v2/movie/top250'
-};
+const db = new loki('uploads/uploads.json',{persistenceMethod:'fs'})
 
-var responseData = '';
-
-var request = http.request(options,(response) => {
-    response.setEncoding('utf8');
-    response.on('data',(chunk) => {
-        responseData += chunk;
-    });
-    response.on('end',() => {
-        JSON.parse(responseData).subjects.map((item) => {
-            console.log(item.title);
+const loadCollection = (collectionName,db) => {
+    return new Promise(resolve => {
+        db.loadDatabase({},() => {
+            const collection = db.getCollection(collectionName) || db.addCollection(collectionName)
+            resolve(collection)
         })
     })
+}
 
+const fileFilter = (request,file,callback) => {
+    if(!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)){
+        return callback(new Error('images only'),false)
+    }
+    callback(null,true)
+}
+
+const upload = multer({dest:'uploads/',fileFilter})
+
+app.post('/profile',upload.single('avatar'),async (request,response,next) => {
+    const collection = await loadCollection('uploads',db)
+    const result = collection.insert(request.file)
+    db.saveDatabase()
+    response.send(result)
 })
 
-request.on('error',(error) => {
-    console.log(error);
-});
+app.post('/photos/upload',upload.array('photos',3),async (request,response,next) => {
+    const collection = await loadCollection('uploads',db)
+    const result = collection.insert(request.files)
+    db.saveDatabase()
+    response.send(result)
+})
 
-request.end();
+app.get('/uploads/:id',async (request,response) => {
+    const collection = await loadCollection('uploads',db)
+    const result = collection.get(request.params.id)
+    response.setHeader('Content-Type',result.mimetype)
+    fs.createReadStream(result.path).pipe(response)
+})
+
+app.use((error,request,response,next) => {
+    response.status(500).send({
+        message:error.message
+    })
+})
+
+app.listen(8080,() => {
+    console.log('localhost:8080')
+})
